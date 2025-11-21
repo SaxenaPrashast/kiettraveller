@@ -127,7 +127,7 @@ node_modules
 bower_components
 
 *.sublime*
-
+.env.production
 psd
 thumb
 sketch
