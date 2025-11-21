@@ -10,9 +10,9 @@ const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
 
-// Load .env from backend folder and override existing env values if necessary
+// Load .env from root folder (one level up from backend)
 // (useful during local development when an empty env var may be set in the environment)
-const envPath = path.resolve(__dirname, '.env');
+const envPath = path.resolve(__dirname, '..', '.env');
 console.log('Loading .env from:', envPath);
 console.log('.env file exists:', fs.existsSync(envPath));
 
@@ -71,7 +71,22 @@ const limiter = rateLimit({
 });
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:", "http:"],
+      connectSrc: ["'self'", "https://a.tile.openstreetmap.org", "https://b.tile.openstreetmap.org", "https://c.tile.openstreetmap.org", "https://nominatim.openstreetmap.org"],
+      fontSrc: ["'self'", "data:"],
+      frameSrc: ["'self'"],
+      mediaSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: []
+    }
+  }
+}));
 app.use(compression());
 app.use(morgan('combined'));
 app.use(limiter);
@@ -98,6 +113,9 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Serve static files from frontend/build (one level up from backend)
+app.use(express.static(path.join(__dirname, '..', 'frontend', 'build')));
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
@@ -111,12 +129,17 @@ app.use('/api/admin', authenticateToken, adminRoutes);
 // Socket.IO connection handling
 const socketHandlers = socketHandler(io);
 
-// 404 handler
-app.use('*', (req, res) => {
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
   res.status(404).json({
     success: false,
-    message: 'Route not found'
+    message: 'API route not found'
   });
+});
+
+// Serve SPA index.html for all other routes (SPA routing)
+app.get('*', (_, res) => {
+  res.sendFile(path.resolve(__dirname, '..', 'frontend', 'build', 'index.html'));
 });
 
 // Error handling middleware

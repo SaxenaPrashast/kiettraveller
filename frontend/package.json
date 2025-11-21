@@ -41,6 +41,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^16.0.1",
     "framer-motion": "^10.16.4",
+    "kiet-traveller-backend": "file:..",
     "lucide-react": "^0.484.0",
     "maplibre-gl": "^5.7.1",
     "react": "^18.2.0",
